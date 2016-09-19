@@ -211,13 +211,16 @@ def encrypt_message(clear_text, key_test):
         #print current_state, "MC"
         current_state = add_round_key(current_state, keys[index])
 
+    # Last ROUND
     current_state = subbytes_matrix_convert(current_state)
     #print current_state, "SB"
     current_state = shift_row(current_state)
     #print current_state, "SR"
 
+    # Final encryption matrix
     encrypted_message = add_round_key(current_state, keys[len(keys)-1]).T
 
+    # Matrix convert into letters
     cipher_text = []
     for row in encrypted_message:
         for col in row:
