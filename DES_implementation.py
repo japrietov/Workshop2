@@ -8,8 +8,14 @@
 # https://en.wikipedia.org/wiki/DES_supplementary_material
 
 
+## -*- coding: latin-1 -*-
 from itertools import repeat
+import math
 import re
+
+def fill_to8(string_to_expand):
+    size = int( math.ceil( len( string_to_expand )/ float(8)) * 8)
+    return (string_to_expand * ((size/len(string_to_expand))+1))[:size]
 
 # Convert each letter to binary
 def convert_letter_to_binary(char):
@@ -17,39 +23,42 @@ def convert_letter_to_binary(char):
     if len(char_bin) < 8: char_bin = list(repeat("0", 8-len(char_bin))) + list(char_bin)
     return "".join(char_bin)
 
+def convert_binary_to_letter(string):
+    num = int(string,2)
+    letter = chr(num)
+    #letter = str(num)+'-'
+    return letter
+
+
+
 # Check length of the key
 def check_len_key(key):
-    if len(key) == 8:
-        return "".join([convert_letter_to_binary(letter) for letter in list(key)])
-    else:
-        return ""
+    return "".join([convert_letter_to_binary(letter) for letter in list(key)])
 
 # From a given bitstring key of length 64, compress into 56 bits
 def PC_1(key):
-    if check_len_key(key) != "":
+    current_key = check_len_key(key)
 
-        current_key = check_len_key(key)
-        # current_key = "0001001100110100010101110111100110011011101111001101111111110001"
-        # test_key = "11110000110011001010101011110101010101100110011110001111"
-        chunks_key = list(reversed(re.findall('........', current_key)))
+    # current_key = "0001001100110100010101110111100110011011101111001101111111110001"
+    # test_key = "11110000110011001010101011110101010101100110011110001111"
+    chunks_key = list(reversed(re.findall('........', current_key)))
 
-        # Left part of the key
-        key_prime_left = []
-        for i in xrange(4):
-            for chunk in chunks_key:
-                key_prime_left.append(chunk[i])
 
-        # Right part of the key
-        key_prime_right = []
-        for j in xrange(6,2,-1):
-            for chunk in chunks_key:
-                key_prime_right.append(chunk[j])
+    # Left part of the key
+    key_prime_left = []
+    for i in xrange(4):
+        for chunk in chunks_key:
+            key_prime_left.append(chunk[i])
 
-        # Join between left and right part, deleting the last 4 bits.
-        return "".join(key_prime_left[:len(key_prime_left)-4] + key_prime_right[:len(key_prime_right)-4])
+    # Right part of the key
+    key_prime_right = []
+    for j in xrange(6,2,-1):
+        for chunk in chunks_key:
+            key_prime_right.append(chunk[j])
 
-    else:
-        return "Wrong length key"
+    # Join between left and right part, deleting the last 4 bits.
+    return "".join(key_prime_left[:len(key_prime_left)-4] + key_prime_right[:len(key_prime_right)-4])
+
 
 # Rotate n bits to the left
 def shiftLbyn(arr, n):
@@ -242,10 +251,28 @@ def compute_next_R_L(left_0, right_0, key_dict):
 
     return dict_Li, dict_Ri
 
+def d_compute_next_R_L(left_0, right_0, key_dict):
+    dict_Li = {}
+    dict_Ri = {}
+    current_L_i = left_0
+    current_R_i = right_0
+
+    for index in xrange(16,0,-1):
+        dict_Li[index] = current_R_i
+        tmp_solution_Ri = bin(int(current_L_i, 2) ^ int(inner_function(current_R_i, key_dict[index]),2))[2:]
+        if len(tmp_solution_Ri) < 32: tmp_solution_Ri = list(repeat("0", 32 - len(tmp_solution_Ri))) + list(tmp_solution_Ri)
+        dict_Ri[index] = "".join(tmp_solution_Ri)
+
+        current_L_i = dict_Li[index]
+        current_R_i = dict_Ri[index]
+
+    return dict_Li, dict_Ri
+
+
 # Inner function f
 def inner_function(right_part, key_i):
     right_expansion = expansion(right_part)
-    k_xor_right =  bin(int(right_expansion,2) ^ int(key_i,2))[2:]
+    k_xor_right = bin(int(right_expansion,2) ^ int(key_i,2))[2:]
     if len(k_xor_right) < 48: k_xor_right = list(repeat("0", 48 - len(k_xor_right))) + list(k_xor_right)
 
     B_i_list  =re.findall('......', "".join(k_xor_right))
@@ -257,25 +284,95 @@ def inner_function(right_part, key_i):
     return permutation_P("".join(B_list_S_box))
 
 
+def check_plain_text(plain_text):
+    completed_string = plain_text if len(plain_text) % 8 == 0 else fill_to8(plain_text)
+    return list(re.findall('........', completed_string))
+
+def string_to_bin(strings):
+    binary_strings = []
+    for string in strings:
+        binary_strings.append("".join([convert_letter_to_binary(letter) for letter in list(string)]))
+    return binary_strings
+
+
+def array_to_string(binary_array):
+    string = ""
+    for array in binary_array:
+        to_print = re.findall('........', array)
+        for item in to_print:
+            string += convert_binary_to_letter(item)
+    print string.decode("latin-1")
+
+
+
+def DES_Encryption(plain_text, key):
+    text = check_plain_text(plain_text)
+    binary_strings = string_to_bin(text)
+
+    encrypted_strings = []
+
+    key = key[:8] if len(key) >= 8 else fill_to8(key)
+    generated_keys = key_generator(key)
+
+    for string in binary_strings:
+        in_perm = initial_permutation(string)
+        dic_l, dic_r = compute_next_R_L(in_perm[:len(string) / 2], in_perm[len(string) / 2:], generated_keys)
+
+        cipher_text = final_permutation(dic_l[16], dic_r[16])
+
+        encrypted_strings.append(cipher_text)
+
+    array_to_string(encrypted_strings)
+    return encrypted_strings
+
+
+def DES_Decryption(cipher_text, key):
+
+    decrypted_strings = []
+
+    key = key[:8] if len(key) >= 8 else fill_to8(key)
+    generated_keys = key_generator(key)
+
+    for string in cipher_text:
+        in_perm = initial_permutation(string)
+        dic_l, dic_r = d_compute_next_R_L(in_perm[:len(string) / 2], in_perm[len(string) / 2:], generated_keys)
+
+        cipher_text = final_permutation(dic_l[1], dic_r[1])
+
+        decrypted_strings.append(cipher_text)
+
+    array_to_string(decrypted_strings)
+    return decrypted_strings
+
 #####################
 # NO ELIMINAR!!
 #####################
+
+mensaje = "Python: Regex findall returns a list, why does trying to access the l"
+key = "the findall f"
+es = DES_Encryption(mensaje, key)
+#print es
+ds = DES_Decryption(es,key)
+#print ds
+
+"""""
 message_test = "0000000100100011010001010110011110001001101010111100110111101111"
 
-key_test = "".join([chr(19), chr(52), chr(87), chr(121), chr(155), chr(188), chr(223), chr(241)])
+key_test = "".join([chr(19), chr(52), chr(87), chr(121), chr(155), chr(188), 'ñ'])
 
 test_key_prime = "11110000110011001010101011110101010101100110011110001111"
 
 tmp = key_generator(key_test)
 
-dic_l, dic_r = compute_next_R_L(initial_permutation(message_test)[:len(message_test)/2], initial_permutation(message_test)[len(message_test)/2:], tmp)
 
+in_perm = initial_permutation(message_test)
+dic_l, dic_r = compute_next_R_L(in_perm[:len(message_test)/2], in_perm[len(message_test)/2:], tmp)
 
 cipher_text = final_permutation(dic_l[16], dic_r[16])
 
 # Print the cipher text in a list of 8 bytes
 print re.findall('........', "".join(cipher_text))
-
+"""
 
 
 

@@ -58,6 +58,7 @@ def key_generator(key):
             Rcon = [hex(getRconValue(i/4))[2:] if len(hex(getRconValue(i/4))[2:]) == 2 else "0"+hex(getRconValue(i/4))[2:]] + list("000000")
             Rcon = "".join(re.findall('..', "".join(Rcon)))
             Xor_Rcon_sub_bytes = hex(int(Rcon,16) ^ int(sub_bytes,16))[2:]
+            if len(Xor_Rcon_sub_bytes) > 8 : Xor_Rcon_sub_bytes = Xor_Rcon_sub_bytes[:-1]
             W_i = re.findall('..', hex(int(Xor_Rcon_sub_bytes,16) ^ int("".join(W_i_4),16))[2:])
             key_hex = np.vstack([key_hex, W_i])
         else:
@@ -68,7 +69,6 @@ def key_generator(key):
 
     for key in xrange(11):
         dict_keys[key] = matrix_keys[key].T
-
     return dict_keys
 
 # make state message
@@ -233,5 +233,5 @@ key_test = "2b7e151628aed2a6abf7158809cf4f3c"
 
 
 print "Encrypted text: ", message_test
-print "Decrypted text: ", encrypt_message(message_test, key_test).decode("iso-8859-1")
+print "Decrypted text: ", encrypt_message(message_test, key_test).decode("latin-1")
 
