@@ -6,6 +6,7 @@
 
 import re
 import math
+from itertools import repeat
 import numpy as np
 
 # Convert each letter to binary
@@ -83,12 +84,13 @@ def key_generator(key):
             sub_bytes = "".join([hex(subbytes(w))[2:] if len(hex(subbytes(w))[2:]) == 2 else "0"+hex(subbytes(w))[2:] for w in Rot_word])
             Rcon = [hex(getRconValue(i/4))[2:] if len(hex(getRconValue(i/4))[2:]) == 2 else "0"+hex(getRconValue(i/4))[2:]] + list("000000")
             Rcon = "".join(re.findall('..', "".join(Rcon)))
-            Xor_Rcon_sub_bytes = hex(int(Rcon,16) ^ int(sub_bytes,16))[2:]
-            if len(Xor_Rcon_sub_bytes) > 8 : Xor_Rcon_sub_bytes = Xor_Rcon_sub_bytes[:-1]
-            W_i = re.findall('..', hex(int(Xor_Rcon_sub_bytes,16) ^ int("".join(W_i_4),16))[2:])
+            Xor_Rcon_sub_bytes = hex(int(Rcon,16) ^ int(sub_bytes,16))[2:].rstrip("L").rjust(8, '0')
+            Xor_W1_W4 = hex(int(Xor_Rcon_sub_bytes,16) ^ int("".join(W_i_4),16))[2:].rstrip("L").rjust(8, '0')
+            W_i = re.findall('..', Xor_W1_W4)
             key_hex = np.vstack([key_hex, W_i])
         else:
-            W_i = re.findall('..', hex(int("".join(W_i_4), 16) ^ int("".join(W_i_1), 16))[2:])
+            Xor_W1_W4 = hex (int("".join(W_i_4), 16) ^ int("".join(W_i_1), 16))[2:].rstrip("L").rjust(8, '0')
+            W_i = re.findall('..', Xor_W1_W4)
             key_hex = np.vstack([key_hex, W_i])
     dict_keys = {}
     matrix_keys = np.array(np.split(key_hex, 11))
@@ -276,8 +278,9 @@ def inv_mix_columns(A):
     return np.array(mix_columns_matrix).T
 
 def fill_to128(string_to_expand):
-    size = int(math.ceil(len(string_to_expand)/float(8)) * 8)
+    size = int(math.ceil(len(string_to_expand)/float(16)) * 16)
     return (string_to_expand * ((size/len(string_to_expand))+1))[:size]
+
 
 # Encrypt message
 def encrypt_message(clear_text, key_test):
@@ -307,7 +310,7 @@ def encrypt_message(clear_text, key_test):
     cipher_text = []
     for row in encrypted_message:
         for col in row:
-            cipher_text.append(col.decode('hex'))
+            cipher_text.append(col)
 
     return "".join(cipher_text)
 
@@ -335,12 +338,38 @@ def decrypt_message(encrypted_text, key_test):
 
     return "".join(cipher_text)
 
-message_test = "AES es muy facil"
-key_test = "2b7e151628aed2a6abf7158809cf4f3c"
+
+def AES_encription(plain_text, key):
+    text = fill_to128(plain_text)
+    plain_blocks = list(re.findall('.{16}', text))
+    key_test = convert_letter_to_hex(key[:16])
+
+    encrypted_blocks = []
+
+    for block in plain_blocks:
+        encrypted_blocks.append(encrypt_message(block, key_test))
+
+    return encrypted_blocks
+
+def AES_decription(encrypted_blocks, key, size):
+    key_test = convert_letter_to_hex(key[:16])
+    decrypted_text = ""
+
+    for block in encrypted_blocks:
+        decrypted_text += decrypt_message(block.decode('hex'), key_test)
+
+    return decrypted_text[:size]
+
+message_test = "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Duis auctor magna dolor, varius ullamcorper justo imperdiet sit amet. Vestibulum justo tellus, aliquet congue elit eu, finibus hendrerit lacus. Curabitur lobortis sodales lorem, sed consectetur erat porttitor sit amet. Sed enim eros, pellentesque quis malesuada non, pretium in risus. Morbi tincidunt euismod arcu ut interdum. Nullam vel interdum nisi. Quisque a tempor elit. Aliquam eget risus dictum, aliquet mi at, fringilla orci. Donec eu erat quis quam accumsan gravida. Cras vel lacus ut metus dignissim pellentesque eu at purus. Class aptent taciti sociosqu ad litora torquent per conubia nostra, per inceptos himenaeos. Aenean aliquam nisi odio, vel ultricies lacus finibus placerat."
+
+#key_test = "2b7e151628aed2a6abf7158809cf4f3c"
+key_test = "Neque porro quisquam est qui dolorem"
 
 
 print "Plain text: ", message_test
-encrypted = encrypt_message(message_test, key_test)
-print "Encrypted text: ", encrypted.decode("iso-8859-1")
-print "Decrypted text: ", decrypt_message(encrypted,key_test).decode("iso-8859-1")
+encrypted = AES_encription(message_test, key_test)
+print "Encrypted text: "
+for i in xrange(len(encrypted)):
+    print i,":",encrypted[i].decode('hex').decode("iso-8859-1")
+print "Decrypted text: ", AES_decription(encrypted,key_test,len(message_test)).decode("iso-8859-1")
 
