@@ -8,6 +8,7 @@
 # https://en.wikipedia.org/wiki/DES_supplementary_material
 
 
+
 ## -*- coding: latin-1 -*-
 from itertools import repeat
 import math

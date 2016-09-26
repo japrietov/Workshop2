@@ -276,7 +276,7 @@ def inv_mix_columns(A):
     return np.array(mix_columns_matrix).T
 
 def fill_to128(string_to_expand):
-    size = int( math.ceil( len( string_to_expand )/ float(8)) * 8)
+    size = int(math.ceil(len(string_to_expand)/float(8)) * 8)
     return (string_to_expand * ((size/len(string_to_expand))+1))[:size]
 
 # Encrypt message
