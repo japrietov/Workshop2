@@ -328,6 +328,7 @@ def DES_Encryption(plain_text, key):
     generated_keys = key_generator(key)
 
     current_value = initial_value
+    print binary_strings
     for string in binary_strings:
         in_perm = initial_permutation(Cipher_Block_Chaining_encoder(current_value, string))
         dic_l, dic_r = compute_next_R_L(in_perm[:len(string) / 2], in_perm[len(string) / 2:], generated_keys)
@@ -350,6 +351,7 @@ def DES_Decryption(cipher_text, key):
     current_value = initial_value
     cipher_text = [convert_letter_to_binary(x) for x in cipher_text]
     cipher_text_1 = re.findall('.{64}', "".join(cipher_text))
+    print len(cipher_text_1)
     for string in cipher_text_1:
         in_perm = initial_permutation(string)
         dic_l, dic_r = d_compute_next_R_L(in_perm[:len(string) / 2], in_perm[len(string) / 2:], generated_keys)
@@ -370,7 +372,6 @@ if __name__ == "__main__":
     input_text = codecs.open(sys.argv[1], "r", "iso-8859-1").read()
     key = codecs.open(sys.argv[2],"r", "iso-8859-1").read()
     x = raw_input("What would you like to do encrypt(1)/decrypt(2): ")
-    print input_text
     if x == "1":
         print "Your input was: ", input_text
         print "with the key: ", key

@@ -371,6 +371,8 @@ def convert_binary_to_letters(string):
     letters = re.findall('........', string)
     return [chr(int(x,2)) for x in letters]
 
+initial_value = "00000010000110011011101110111000100111111101010101110111001001000000010000111111011011111110100000111010000001100011011111000010"
+
 def AES_encription(plain_text, key):
     text = fill_to128(plain_text)
     plain_blocks = list(re.findall('.{16}', text))
@@ -378,7 +380,6 @@ def AES_encription(plain_text, key):
 
     encrypted_blocks = []
     # Cipher block chaining
-    initial_value = "".join([str(random.randint(0, 1)) for _ in xrange(len(plain_blocks[0]))])
     current_value = initial_value
     for block in plain_blocks:
         block = "".join([convert_letter_to_binary(i) for i in block])
@@ -387,12 +388,14 @@ def AES_encription(plain_text, key):
         tmp_list = re.findall("..", cipher_text)
         encrypted_blocks.append(cipher_text)
         current_value = "".join([bin(int(a, 16))[2:].zfill(8) for a in tmp_list])
-    return encrypted_blocks, initial_value
+    return encrypted_blocks
 
-def AES_decription(encrypted_blocks, key, size, initial_value):
+def AES_decription(encrypted_blocks, key, size):
     key_test = convert_letter_to_hex(key[:16])
     decrypted_text = ""
     current_value = initial_value
+    encrypted_blocks = list(re.findall('.{16}', encrypted_blocks))
+    print encrypted_blocks
     for block in encrypted_blocks:
         block = block.decode('hex')
         decr_text = decrypt_message(block, key_test)
@@ -411,7 +414,6 @@ def array_to_string(hex_array):
     return string
 
 
-
 import sys
 import codecs
 
@@ -419,15 +421,13 @@ if __name__ == "__main__":
     input_text = codecs.open(sys.argv[1], "r", "iso-8859-1").read()
     key = codecs.open(sys.argv[2],"r", "iso-8859-1").read()
     x = raw_input("What would you like to do encrypt(1)/decrypt(2): ")
-    print input_text
     if x == "1":
         print "Your input was: ", input_text
         print "with the key: ", key
         print
         print "The cipher text is: "
-        encrypted, length = AES_encription(input_text, key)
+        encrypted = AES_encription(input_text, key)
         file = codecs.open('cipher_text.txt', "w", "iso-8859-1")
-        print encrypted
         file.write(array_to_string(encrypted))
         file.close()
         print array_to_string(encrypted)
@@ -436,15 +436,13 @@ if __name__ == "__main__":
         print "with the key: ", key
         print
         print "The message is: "
-        decrypt = AES_decription(input_text, key)
-        print array_to_string(decrypt)
+        decrypt = AES_decription(input_text, key, len(input_text)).decode("iso-8859-1")
+        print decrypt
     else:
         print "Wrong choice"
 
 
-
-
-
+"""
 
 
 message_test = "1234567890Lorem ipsum dolor sit amet, consectetur adipiscing elit. Duis auctor magna dolor, varius ullamcorper justo imperdiet sit amet. Vestibulum justo tellus, aliquet congue elit eu, finibus hendrerit lacus. Curabitur lobortis sodales lorem, sed consectetur erat porttitor sit amet. Sed enim eros, pellentesque quis malesuada non, pretium in risus. Morbi tincidunt euismod arcu ut interdum. Nullam vel interdum nisi. Quisque a tempor elit. Aliquam eget risus dictum, aliquet mi at, fringilla orci. Donec eu erat quis quam accumsan gravida. Cras vel lacus ut metus dignissim pellentesque eu at purus. Class aptent taciti sociosqu ad litora torquent per conubia nostra, per inceptos himenaeos. Aenean aliquam nisi odio, vel ultricies lacus finibus placerat."
@@ -459,5 +457,6 @@ encrypted, initial_value = AES_encription(message_test, key_test)
 print array_to_string(encrypted )
 
 
-print AES_decription(encrypted,key_test,len(message_test), initial_value).decode("iso-8859-1")
+print AES_decription(encrypted, key_test, len(message_test), initial_value).decode("iso-8859-1")
 
+"""
