@@ -138,7 +138,6 @@ def initial_permutation(message):
                                   [59, 51,	43, 35,	27, 19, 11, 3],
                                   [61, 53,	45, 37,	29, 21, 13, 5],
                                   [63, 55,	47, 39,	31, 23, 15, 7]]
-
     message_prime = []
     for row in initial_permutation_matrix:
         for col in row:
@@ -316,7 +315,8 @@ def Cipher_Block_Chaining_decoder(cipher_text_i, cipher_text_iplus1):
     return part_tmp
 
 
-initial_value = "".join([str(random.randint(0, 1)) for _ in xrange(64)])
+initial_value = "1111010100011010101011110001001110000000001100000001000100011000"
+
 
 def DES_Encryption(plain_text, key):
     text = check_plain_text(plain_text)
@@ -348,14 +348,15 @@ def DES_Decryption(cipher_text, key):
     generated_keys = key_generator(key)
 
     current_value = initial_value
-    for string in cipher_text:
+    cipher_text = [convert_letter_to_binary(x) for x in cipher_text]
+    cipher_text_1 = re.findall('.{64}', "".join(cipher_text))
+    for string in cipher_text_1:
         in_perm = initial_permutation(string)
         dic_l, dic_r = d_compute_next_R_L(in_perm[:len(string) / 2], in_perm[len(string) / 2:], generated_keys)
 
         cipher_text = final_permutation(dic_l[1], dic_r[1])
         decrypted_strings.append("".join(Cipher_Block_Chaining_decoder(current_value, cipher_text)))
         current_value = string
-
     return decrypted_strings
 
 #####################
@@ -375,18 +376,22 @@ if __name__ == "__main__":
         print "with the key: ", key
         print
         print "The cipher text is: "
+        print
         encrypted, length = DES_Encryption(input_text, key)
         file = codecs.open('cipher_text.txt', "w", "iso-8859-1")
         file.write(array_to_string(encrypted))
         file.close()
         print array_to_string(encrypted)
+        print
     elif x == "2":
         print "Your cipher text was: ", input_text
         print "with the key: ", key
         print
         print "The message is: "
+        print
         decrypt = DES_Decryption(input_text, key)
         print array_to_string(decrypt)
+        print
     else:
         print "Wrong choice"
 

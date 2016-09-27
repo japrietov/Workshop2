@@ -411,6 +411,42 @@ def array_to_string(hex_array):
     return string
 
 
+
+import sys
+import codecs
+
+if __name__ == "__main__":
+    input_text = codecs.open(sys.argv[1], "r", "iso-8859-1").read()
+    key = codecs.open(sys.argv[2],"r", "iso-8859-1").read()
+    x = raw_input("What would you like to do encrypt(1)/decrypt(2): ")
+    print input_text
+    if x == "1":
+        print "Your input was: ", input_text
+        print "with the key: ", key
+        print
+        print "The cipher text is: "
+        encrypted, length = AES_encription(input_text, key)
+        file = codecs.open('cipher_text.txt', "w", "iso-8859-1")
+        print encrypted
+        file.write(array_to_string(encrypted))
+        file.close()
+        print array_to_string(encrypted)
+    elif x == "2":
+        print "Your cipher text was: ", input_text
+        print "with the key: ", key
+        print
+        print "The message is: "
+        decrypt = AES_decription(input_text, key)
+        print array_to_string(decrypt)
+    else:
+        print "Wrong choice"
+
+
+
+
+
+
+
 message_test = "1234567890Lorem ipsum dolor sit amet, consectetur adipiscing elit. Duis auctor magna dolor, varius ullamcorper justo imperdiet sit amet. Vestibulum justo tellus, aliquet congue elit eu, finibus hendrerit lacus. Curabitur lobortis sodales lorem, sed consectetur erat porttitor sit amet. Sed enim eros, pellentesque quis malesuada non, pretium in risus. Morbi tincidunt euismod arcu ut interdum. Nullam vel interdum nisi. Quisque a tempor elit. Aliquam eget risus dictum, aliquet mi at, fringilla orci. Donec eu erat quis quam accumsan gravida. Cras vel lacus ut metus dignissim pellentesque eu at purus. Class aptent taciti sociosqu ad litora torquent per conubia nostra, per inceptos himenaeos. Aenean aliquam nisi odio, vel ultricies lacus finibus placerat."
 
 #key_test = "2b7e151628aed2a6abf7158809cf4f3c"
