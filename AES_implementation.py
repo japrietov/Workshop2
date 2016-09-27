@@ -8,6 +8,7 @@ import re
 import math
 from itertools import repeat
 import numpy as np
+import random
 
 # Convert each letter to binary
 def convert_letter_to_hex(char):
@@ -314,6 +315,28 @@ def encrypt_message(clear_text, key_test):
 
     return "".join(cipher_text)
 
+# Rotate n bits to the left
+def shiftLbyn(arr, n):
+    return arr[n::] + arr[:n:]
+
+# Rotate n bits to the right
+def shiftRbyn(arr, n=0):
+    n = len(arr) - n
+    return arr[n::] + arr[:n:]
+
+def Cipher_Block_Chaining_encoder(cipher_text, message):
+    part_tmp = bin(int(cipher_text, 2) ^ int(message, 2))[2:]
+    if len(part_tmp) < 128: part_tmp = list(repeat("0", 128 - len(part_tmp))) + list(part_tmp)
+    current_cipher = "".join(shiftLbyn(part_tmp, 64))
+    return current_cipher
+
+
+def Cipher_Block_Chaining_decoder(cipher_text_i, cipher_text_iplus1):
+    part_tmp = bin(int(cipher_text_i, 2) ^ int("".join(shiftRbyn(cipher_text_iplus1, 64)), 2))[2:]
+    if len(part_tmp) < 128: part_tmp = list(repeat("0", 128 - len(part_tmp))) + list(part_tmp)
+    return "".join(part_tmp)
+
+
 def decrypt_message(encrypted_text, key_test):
     keys = key_generator(key_test)
     initial_round = add_round_key(make_state_message(encrypted_text),keys[len(keys)-1])
@@ -338,6 +361,15 @@ def decrypt_message(encrypted_text, key_test):
 
     return "".join(cipher_text)
 
+# Convert each letter to binary
+def convert_letter_to_binary(char):
+    char_bin = bin(ord(char))[2:]
+    if len(char_bin) < 8: char_bin = list(repeat("0", 8-len(char_bin))) + list(char_bin)
+    return "".join(char_bin)
+
+def convert_binary_to_letters(string):
+    letters = re.findall('........', string)
+    return [chr(int(x,2)) for x in letters]
 
 def AES_encription(plain_text, key):
     text = fill_to128(plain_text)
@@ -345,31 +377,51 @@ def AES_encription(plain_text, key):
     key_test = convert_letter_to_hex(key[:16])
 
     encrypted_blocks = []
-
+    # Cipher block chaining
+    initial_value = "".join([str(random.randint(0, 1)) for _ in xrange(len(plain_blocks[0]))])
+    current_value = initial_value
     for block in plain_blocks:
-        encrypted_blocks.append(encrypt_message(block, key_test))
+        block = "".join([convert_letter_to_binary(i) for i in block])
+        tmp = Cipher_Block_Chaining_encoder(current_value, block)
+        cipher_text = encrypt_message(convert_binary_to_letters(tmp), key_test)
+        tmp_list = re.findall("..", cipher_text)
+        encrypted_blocks.append(cipher_text)
+        current_value = "".join([bin(int(a, 16))[2:].zfill(8) for a in tmp_list])
+    return encrypted_blocks, initial_value
 
-    return encrypted_blocks
-
-def AES_decription(encrypted_blocks, key, size):
+def AES_decription(encrypted_blocks, key, size, initial_value):
     key_test = convert_letter_to_hex(key[:16])
     decrypted_text = ""
-
+    current_value = initial_value
     for block in encrypted_blocks:
-        decrypted_text += decrypt_message(block.decode('hex'), key_test)
+        block = block.decode('hex')
+        decr_text = decrypt_message(block, key_test)
+        tmp = Cipher_Block_Chaining_decoder(current_value, "".join([convert_letter_to_binary(x) for x in decr_text]))
+        decrypted_text += "".join(convert_binary_to_letters(tmp))
+        current_value = "".join([convert_letter_to_binary(x) for x in block])
 
     return decrypted_text[:size]
 
-message_test = "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Duis auctor magna dolor, varius ullamcorper justo imperdiet sit amet. Vestibulum justo tellus, aliquet congue elit eu, finibus hendrerit lacus. Curabitur lobortis sodales lorem, sed consectetur erat porttitor sit amet. Sed enim eros, pellentesque quis malesuada non, pretium in risus. Morbi tincidunt euismod arcu ut interdum. Nullam vel interdum nisi. Quisque a tempor elit. Aliquam eget risus dictum, aliquet mi at, fringilla orci. Donec eu erat quis quam accumsan gravida. Cras vel lacus ut metus dignissim pellentesque eu at purus. Class aptent taciti sociosqu ad litora torquent per conubia nostra, per inceptos himenaeos. Aenean aliquam nisi odio, vel ultricies lacus finibus placerat."
+def array_to_string(hex_array):
+    string = ""
+    for array in hex_array:
+        to_print = re.findall('..', array)
+        for item in to_print:
+            string += item.decode('hex').decode("iso-8859-1")
+    return string
+
+
+message_test = "1234567890Lorem ipsum dolor sit amet, consectetur adipiscing elit. Duis auctor magna dolor, varius ullamcorper justo imperdiet sit amet. Vestibulum justo tellus, aliquet congue elit eu, finibus hendrerit lacus. Curabitur lobortis sodales lorem, sed consectetur erat porttitor sit amet. Sed enim eros, pellentesque quis malesuada non, pretium in risus. Morbi tincidunt euismod arcu ut interdum. Nullam vel interdum nisi. Quisque a tempor elit. Aliquam eget risus dictum, aliquet mi at, fringilla orci. Donec eu erat quis quam accumsan gravida. Cras vel lacus ut metus dignissim pellentesque eu at purus. Class aptent taciti sociosqu ad litora torquent per conubia nostra, per inceptos himenaeos. Aenean aliquam nisi odio, vel ultricies lacus finibus placerat."
 
 #key_test = "2b7e151628aed2a6abf7158809cf4f3c"
 key_test = "Neque porro quisquam est qui dolorem"
 
 
-print "Plain text: ", message_test
-encrypted = AES_encription(message_test, key_test)
-print "Encrypted text: "
-for i in xrange(len(encrypted)):
-    print i,":",encrypted[i].decode('hex').decode("iso-8859-1")
-print "Decrypted text: ", AES_decription(encrypted,key_test,len(message_test)).decode("iso-8859-1")
+
+print message_test
+encrypted, initial_value = AES_encription(message_test, key_test)
+print array_to_string(encrypted )
+
+
+print AES_decription(encrypted,key_test,len(message_test), initial_value).decode("iso-8859-1")
 

@@ -13,6 +13,7 @@
 from itertools import repeat
 import math
 import re
+import random
 
 def fill_to8(string_to_expand):
     size = int( math.ceil( len( string_to_expand )/ float(8)) * 8)
@@ -29,8 +30,6 @@ def convert_binary_to_letter(string):
     letter = chr(num)
     #letter = str(num)+'-'
     return letter
-
-
 
 # Check length of the key
 def check_len_key(key):
@@ -60,10 +59,15 @@ def PC_1(key):
     # Join between left and right part, deleting the last 4 bits.
     return "".join(key_prime_left[:len(key_prime_left)-4] + key_prime_right[:len(key_prime_right)-4])
 
-
 # Rotate n bits to the left
 def shiftLbyn(arr, n):
     return arr[n::] + arr[:n:]
+
+# Rotate n bits to the right
+def shiftRbyn(arr, n=0):
+    n = len(arr) - n
+    return arr[n::] + arr[:n:]
+
 
 # Permutation P
 def permutation_P(f_inner):
@@ -142,7 +146,6 @@ def initial_permutation(message):
 
     return "".join(message_prime)
 
-
 # Final permutation IP-1
 def final_permutation(l_last, r_last):
     matrix_final_permutation = [[40, 8, 48, 16, 56, 24, 64, 32],
@@ -162,8 +165,6 @@ def final_permutation(l_last, r_last):
             cipher_text.append(message_final[col-1])
 
     return "".join(cipher_text)
-
-
 
 # Expansion Function E
 def expansion(right_part):
@@ -252,6 +253,7 @@ def compute_next_R_L(left_0, right_0, key_dict):
 
     return dict_Li, dict_Ri
 
+
 def d_compute_next_R_L(left_0, right_0, key_dict):
     dict_Li = {}
     dict_Ri = {}
@@ -269,7 +271,6 @@ def d_compute_next_R_L(left_0, right_0, key_dict):
 
     return dict_Li, dict_Ri
 
-
 # Inner function f
 def inner_function(right_part, key_i):
     right_expansion = expansion(right_part)
@@ -284,7 +285,6 @@ def inner_function(right_part, key_i):
 
     return permutation_P("".join(B_list_S_box))
 
-
 def check_plain_text(plain_text):
     completed_string = plain_text if len(plain_text) % 8 == 0 else fill_to8(plain_text)
     return list(re.findall('........', completed_string))
@@ -295,16 +295,28 @@ def string_to_bin(strings):
         binary_strings.append("".join([convert_letter_to_binary(letter) for letter in list(string)]))
     return binary_strings
 
-
 def array_to_string(binary_array):
     string = ""
     for array in binary_array:
         to_print = re.findall('........', array)
         for item in to_print:
             string += convert_binary_to_letter(item)
-    print string.decode("latin-1")
+    return string.decode("latin-1")
+
+def Cipher_Block_Chaining_encoder(cipher_text, message):
+    part_tmp = bin(int(cipher_text, 2) ^ int(message, 2))[2:]
+    if len(part_tmp) < 64: part_tmp = list(repeat("0", 64 - len(part_tmp))) + list(part_tmp)
+    current_cipher = "".join(shiftLbyn(part_tmp, 32))
+    return current_cipher
 
 
+def Cipher_Block_Chaining_decoder(cipher_text_i, cipher_text_iplus1):
+    part_tmp = bin(int(cipher_text_i, 2) ^ int("".join(shiftRbyn(cipher_text_iplus1, 32)), 2))[2:]
+    if len(part_tmp) < 64: part_tmp = list(repeat("0", 64 - len(part_tmp))) + list(part_tmp)
+    return part_tmp
+
+
+initial_value = "".join([str(random.randint(0, 1)) for _ in xrange(64)])
 
 def DES_Encryption(plain_text, key):
     text = check_plain_text(plain_text)
@@ -315,16 +327,17 @@ def DES_Encryption(plain_text, key):
     key = key[:8] if len(key) >= 8 else fill_to8(key)
     generated_keys = key_generator(key)
 
+    current_value = initial_value
     for string in binary_strings:
-        in_perm = initial_permutation(string)
+        in_perm = initial_permutation(Cipher_Block_Chaining_encoder(current_value, string))
         dic_l, dic_r = compute_next_R_L(in_perm[:len(string) / 2], in_perm[len(string) / 2:], generated_keys)
-
         cipher_text = final_permutation(dic_l[16], dic_r[16])
+
+        current_value = cipher_text
 
         encrypted_strings.append(cipher_text)
 
-    array_to_string(encrypted_strings)
-    return encrypted_strings
+    return encrypted_strings, len(plain_text)
 
 
 def DES_Decryption(cipher_text, key):
@@ -334,47 +347,47 @@ def DES_Decryption(cipher_text, key):
     key = key[:8] if len(key) >= 8 else fill_to8(key)
     generated_keys = key_generator(key)
 
+    current_value = initial_value
     for string in cipher_text:
         in_perm = initial_permutation(string)
         dic_l, dic_r = d_compute_next_R_L(in_perm[:len(string) / 2], in_perm[len(string) / 2:], generated_keys)
 
         cipher_text = final_permutation(dic_l[1], dic_r[1])
+        decrypted_strings.append("".join(Cipher_Block_Chaining_decoder(current_value, cipher_text)))
+        current_value = string
 
-        decrypted_strings.append(cipher_text)
-
-    array_to_string(decrypted_strings)
     return decrypted_strings
 
 #####################
 # NO ELIMINAR!!
 #####################
 
-mensaje = "Python: Regex findall returns a list, why does trying to access the l"
-key = "the findall f"
-es = DES_Encryption(mensaje, key)
-#print es
-ds = DES_Decryption(es,key)
-#print ds
+import sys
+import codecs
 
-"""""
-message_test = "0000000100100011010001010110011110001001101010111100110111101111"
-
-key_test = "".join([chr(19), chr(52), chr(87), chr(121), chr(155), chr(188), 'ñ'])
-
-test_key_prime = "11110000110011001010101011110101010101100110011110001111"
-
-tmp = key_generator(key_test)
-
-
-in_perm = initial_permutation(message_test)
-dic_l, dic_r = compute_next_R_L(in_perm[:len(message_test)/2], in_perm[len(message_test)/2:], tmp)
-
-cipher_text = final_permutation(dic_l[16], dic_r[16])
-
-# Print the cipher text in a list of 8 bytes
-print re.findall('........', "".join(cipher_text))
-"""
-
+if __name__ == "__main__":
+    input_text = raw_input("Paste your input: ")
+    key = raw_input("Paste your key: ")
+    x = raw_input("What would you like to do encrypt(1)/decrypt(2): ")
+    if x == "1":
+        print "Your input was: ", input_text
+        print "with the key: ", key
+        print
+        print "The cipher text is: "
+        encrypted, length = DES_Encryption(input_text, key)
+        file = codecs.open('cipher_text.txt', "w", "iso-8859-1")
+        file.write(array_to_string(encrypted))
+        file.close()
+        print array_to_string(encrypted)
+    elif x == "2":
+        print "Your cipher text was: ", input_text
+        print "with the key: ", key
+        print
+        print "The message is: "
+        decrypt = DES_Decryption(input_text, key)
+        print array_to_string(decrypt)
+    else:
+        print "Wrong choice"
 
 
 
