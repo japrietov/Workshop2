@@ -366,9 +366,10 @@ import sys
 import codecs
 
 if __name__ == "__main__":
-    input_text = raw_input("Paste your input: ")
-    key = raw_input("Paste your key: ")
+    input_text = codecs.open(sys.argv[1], "r", "iso-8859-1").read()
+    key = codecs.open(sys.argv[2],"r", "iso-8859-1").read()
     x = raw_input("What would you like to do encrypt(1)/decrypt(2): ")
+    print input_text
     if x == "1":
         print "Your input was: ", input_text
         print "with the key: ", key
