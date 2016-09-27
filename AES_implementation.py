@@ -394,8 +394,10 @@ def AES_decription(encrypted_blocks, key, size):
     key_test = convert_letter_to_hex(key[:16])
     decrypted_text = ""
     current_value = initial_value
-    encrypted_blocks = list(re.findall('.{16}', encrypted_blocks))
-    print encrypted_blocks
+
+    encrypted_blocks = "".join([hex(ord(c))[2:].zfill(2) for c in encrypted_blocks])
+
+    encrypted_blocks = re.findall('.{32}',encrypted_blocks)
     for block in encrypted_blocks:
         block = block.decode('hex')
         decr_text = decrypt_message(block, key_test)
@@ -403,7 +405,7 @@ def AES_decription(encrypted_blocks, key, size):
         decrypted_text += "".join(convert_binary_to_letters(tmp))
         current_value = "".join([convert_letter_to_binary(x) for x in block])
 
-    return decrypted_text[:size]
+    return decrypted_text
 
 def array_to_string(hex_array):
     string = ""
@@ -444,19 +446,16 @@ if __name__ == "__main__":
 
 """
 
+    message_test = "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Duis auctor magna dolor, varius ullamcorper justo imperdiet sit amet"
 
-message_test = "1234567890Lorem ipsum dolor sit amet, consectetur adipiscing elit. Duis auctor magna dolor, varius ullamcorper justo imperdiet sit amet. Vestibulum justo tellus, aliquet congue elit eu, finibus hendrerit lacus. Curabitur lobortis sodales lorem, sed consectetur erat porttitor sit amet. Sed enim eros, pellentesque quis malesuada non, pretium in risus. Morbi tincidunt euismod arcu ut interdum. Nullam vel interdum nisi. Quisque a tempor elit. Aliquam eget risus dictum, aliquet mi at, fringilla orci. Donec eu erat quis quam accumsan gravida. Cras vel lacus ut metus dignissim pellentesque eu at purus. Class aptent taciti sociosqu ad litora torquent per conubia nostra, per inceptos himenaeos. Aenean aliquam nisi odio, vel ultricies lacus finibus placerat."
+    # key_test = "2b7e151628aed2a6abf7158809cf4f3c"
+    key_test = "Neque porro quisquam est qui dolorem"
 
-#key_test = "2b7e151628aed2a6abf7158809cf4f3c"
-key_test = "Neque porro quisquam est qui dolorem"
+    print message_test
+    encrypted, initial_value = AES_encription(message_test, key_test)
+    print array_to_string(encrypted)
 
+    print AES_decription(encrypted, key_test, len(message_test), initial_value).decode("iso-8859-1")
 
-
-print message_test
-encrypted, initial_value = AES_encription(message_test, key_test)
-print array_to_string(encrypted )
-
-
-print AES_decription(encrypted, key_test, len(message_test), initial_value).decode("iso-8859-1")
 
 """
